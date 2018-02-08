@@ -1,0 +1,6 @@
+[package]
+name = "clargs"
+version = "0.1.0"
+authors = ["Anthony Beerens <anthony.beerens@gmail.com>"]
+
+[dependencies]
