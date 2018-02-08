@@ -2,5 +2,11 @@
 name = "clargs"
 version = "0.1.0"
 authors = ["Anthony Beerens <anthony.beerens@gmail.com>"]
+description = "A command-line arguments parsing library."
+repository = "https://github.com/Zeldhoron/clargs"
+keywords = ["command-line", "arguments", "parsing"]
+categories = ["command-line-interface", "parsing"]
+license = "MIT License"
+license-file = "LICENSE-MIT"
 
 [dependencies]
