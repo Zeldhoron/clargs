@@ -64,7 +64,7 @@ impl Parser {
     ///
     /// Panics if there already is an option with the specified `name`.
     /// Or if the specified `name` is an invalid option name.
-    pub fn add_flag(&mut self, name: String) {
+    pub fn add_flag(&mut self, name: String) -> &mut Parser {
         if self.has_option(&name) {
             panic!("clargs: cannot add an option with a name that is already present!");
         }
@@ -72,6 +72,7 @@ impl Parser {
             panic!("clargs: cannot add an option with an invalid name!");
         }
         self.flags.insert(name);
+        self
     }
 
     /// Registers a new named parameter with the `Parser` under the specified `name`.
@@ -81,7 +82,7 @@ impl Parser {
     ///
     /// Panics if there already is an option with the specified `name`.
     /// Or if the specified `name` is an invalid option name.
-    pub fn add_named_param<T: 'static + FromStr>(&mut self, name: String) {
+    pub fn add_named_param<T: 'static + FromStr>(&mut self, name: String) -> &mut Parser {
         if self.has_option(&name) {
             panic!("clargs: cannot add an option with a name that is already present!");
         }
@@ -89,6 +90,7 @@ impl Parser {
             panic!("clargs: cannot add an option with an invalid name!");
         }
         self.named_params.insert(name, Box::new(ParamParserTyped::<T>::new()));
+        self
     }
 
 

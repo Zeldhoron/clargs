@@ -16,6 +16,8 @@ The double hyphen marker is a feature that is enabled by default.
 If enabled, any arguments that follow a '--' argument are interpreted as unnamed parameters.
 If disabled, the '--' argument itself is interpreted as an unnamed parameter.
 
+Note that the first argument is always interpreted as the path to the running program.
+
 # Syntax
 
 There are two types of command-line syntax, single hyphen and double hyphen syntax.
@@ -33,7 +35,7 @@ Note that if there are multiple matches, an error will be returned.
 If the specified option is a named parameter, the next argument will be interpreted as that option's argument.
 
 If an option specified using '--' contains a '=', it is interpreted as a named parameter.
-The part before the '=' is interpreted as the option's name, the part after the '-' is interpreted as the option's argument.
+The part before the '=' is interpreted as the option's name, the part after the '=' is interpreted as the option's argument.
 
 # Examples
 

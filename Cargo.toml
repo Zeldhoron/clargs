@@ -1,13 +1,12 @@
 [package]
 name = "clargs"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Anthony Beerens <anthony.beerens@gmail.com>"]
 description = "A command-line arguments parsing library."
 repository = "https://github.com/Zeldhoron/clargs"
 readme = "README.md"
 keywords = ["command-line", "arguments", "parsing"]
 categories = ["command-line-interface", "parsing"]
-license = "MIT"
 license-file = "LICENSE-MIT"
 
 [dependencies]
