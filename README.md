@@ -4,13 +4,18 @@ Parsing command-line arguments requires quite a bit of boilerplate code.
 This library remedies that for rust projects.
 
 A `Parser` object can be used to parse command-line arguments after configuring the `Parser`.
-Configuring the `Parser` consists of registering flags and named parameters, and (optionally) enabling or disabling some features.
+Configuring the `Parser` consists of registering flags, named parameters, aliases, and (optionally) enabling or disabling some features.
 
 A flag is an option that has a name and does not require an argument.
 A named parameter is an option that has a name and that does require an argument.
 An unnamed parameter is an option that is neither a flag, a named parameter, nor an argument to a named parameter.
+An alias maps one name to an option that already has another name.
 
-All option names can contain only lower and uppercase letters and hyphens.
+Options are identified by the name they were registered with.
+Aliases are only used during interpretation of the command-line arguments.
+As a result of this, they will never occur in the results or an error after parsing.
+
+All option names and aliases can contain only lower and uppercase letters and hyphens.
 
 The double hyphen marker is a feature that is enabled by default.
 If enabled, any arguments that follow a '--' argument are interpreted as unnamed parameters.
@@ -45,14 +50,14 @@ An example of how `clargs` would be used:
 // create and configure a parser object
 let mut parser = clargs::Parser::new();
 
-parser.add_flag(String::from("f"));
 parser.add_flag(String::from("flag"));
+parser.add_alias(String::from("f"), String::from("flag"));
 
-parser.add_named_param::<i32>(String::from("i"));
 parser.add_named_param::<i32>(String::from("int"));
+parser.add_alias(String::from("i"), String::from("int"));
 
-parser.add_named_param::<String>(String::from("s"));
 parser.add_named_param::<String>(String::from("str"));
+parser.add_alias(String::from("s"), String::from("str"));
 
 
 // getting and parsing the command line arguments
@@ -70,28 +75,15 @@ let results = match parser.parse(args.iter()) {
 // code with path
 println!("{}", results.path());
 
-if results.flag("f") {
-    // code if flag 'f' was set
-}
 if results.flag("flag") {
-    // code if flag 'flag' was set
-}
-
-if let Some(value) = results.named_param::<i32>("i") {
-    // code if parameter 'i' was set
-    // with 'value' equal to the parameter's argument of type 'i32'
+    // code if flag 'flag' or alias 'f' was set
 }
 if let Some(value) = results.named_param::<i32>("int") {
-    // code if parameter 'int' was set
+    // code if parameter 'int' or alias 'i' was set
     // with 'value' equal to the parameter's argument of type 'i32'
 }
-
-if let Some(value) = results.named_param::<String>("s") {
-    // code if parameter 's' was set
-    // with 'value' equal to the parameter's argument of type 'String'
-}
 if let Some(value) = results.named_param::<String>("str") {
-    // code if parameter 'str' was set
+    // code if parameter 'str' or alias 's' was set
     // with 'value' equal to the parameter's argument of type 'String'
 }
 

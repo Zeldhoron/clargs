@@ -1,6 +1,6 @@
 [package]
 name = "clargs"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Anthony Beerens <anthony.beerens@gmail.com>"]
 description = "A command-line arguments parsing library."
 repository = "https://github.com/Zeldhoron/clargs"
