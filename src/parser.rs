@@ -15,17 +15,18 @@ use parsing_error::ParsingError;
 pub struct Parser {
     flags: HashSet<String>,
     named_params: HashMap<String, Box<ParamParser>>,
+    aliases: HashMap<String, String>,
     double_hyphen_marker: bool,
 }
 
 
 impl Parser {
-
     /// Constructs and returns a new `Parser` object.
     pub fn new() -> Parser {
         Parser {
             flags: HashSet::<String>::new(),
             named_params: HashMap::<String, Box<ParamParser>>::new(),
+            aliases: HashMap::<String, String>::new(),
             double_hyphen_marker: true,
         }
     }
@@ -45,16 +46,23 @@ impl Parser {
     }
 
 
-    /// Returns `true` if the `Parser` currently has an option with the specified `name`.
+    /// Returns `true` if the `Parser` currently has an option or an alias with the specified `name`.
     pub fn has_option(&self, name: &str) -> bool {
-        self.flags.contains(name) || self.named_params.contains_key(name)
+        self.flags.contains(name) || self.named_params.contains_key(name) || self.aliases.contains_key(name)
     }
 
     /// Invalidates any option with the specified `name` from the `Parser` object.
     /// Does nothing if there is no such option.
+    ///
+    /// If an option is removed, all aliases to that option will be removed aswell.
+    /// If an alias is removed, only that alias will be removed and nothing else.
     pub fn remove_option(&mut self, name: &str) {
+        self.aliases.remove(name);
         self.flags.remove(name);
         self.named_params.remove(name);
+        for alias in self.aliases.iter().find(|&(_, option)| option == name).map(|(alias, _)| alias.clone()) {
+            self.aliases.remove(&alias);
+        }
     }
 
 
@@ -62,7 +70,7 @@ impl Parser {
     ///
     /// # Panics
     ///
-    /// Panics if there already is an option with the specified `name`.
+    /// Panics if there already is an option or an alias with the specified `name`.
     /// Or if the specified `name` is an invalid option name.
     pub fn add_flag(&mut self, name: String) -> &mut Parser {
         if self.has_option(&name) {
@@ -80,7 +88,7 @@ impl Parser {
     ///
     /// # Panics
     ///
-    /// Panics if there already is an option with the specified `name`.
+    /// Panics if there already is an option or an alias with the specified `name`.
     /// Or if the specified `name` is an invalid option name.
     pub fn add_named_param<T: 'static + FromStr>(&mut self, name: String) -> &mut Parser {
         if self.has_option(&name) {
@@ -93,6 +101,27 @@ impl Parser {
         self
     }
 
+    /// Registers a new alias with the `Parser` with the specified `name` to the specified `target`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if there already is an option or an alias with the specified `name`.
+    /// Or if the specified `name` is an invalid option name.
+    /// Or if the specified `target` is not a present option.
+    pub fn add_alias(&mut self, name: String, target: String) -> &mut Parser {
+        if self.has_option(&name) {
+            panic!("clargs: cannot add an alias with a name that is already present!");
+        }
+        if !self.flags.contains(&target) && !self.named_params.contains_key(&target) {
+            panic!("clargs: cannot add an alias with a target that does not exist!");
+        }
+        if !Parser::is_valid_option_name(&name) {
+            panic!("clargs: cannot add an alias with an invalid name!");
+        }
+        self.aliases.insert(name, target);
+        self
+    }
+    
 
     /// Returns `true` if the double-hyphen marker is enabled.
     pub fn double_hyphen_marker(&self) -> bool {
@@ -142,6 +171,16 @@ impl Parser {
         matches
     }
 
+    /// Returns the definite name of an option.
+    /// If the specified `name` is an alias, returns the name of the option it points to.
+    /// Otherwise, returns the same string.
+    pub fn resolve(&self, name: String) -> String {
+        match self.aliases.get(&name) {
+            Some(value) => value.clone(),
+            None => name,
+        }
+    }
+
 
     /// Parses the specified command-line arguments.
     /// If an error occurred according to the `Parser`'s configuration, a `ParsingError` will be returned.
@@ -173,7 +212,7 @@ impl Parser {
                     let mut matches = self.match_options(option);
                     let option = match matches.len() {
                         0 => return Err(ParsingError::Unrecognized(String::from(&arg[2..]))),
-                        1 => matches.remove(0),
+                        1 => self.resolve(matches.remove(0)),
                         _ => return Err(ParsingError::Ambiguous(String::from(option), matches)),
                     };
 
@@ -195,7 +234,7 @@ impl Parser {
                     let mut matches = self.match_options(option);
                     let option = match matches.len() {
                         0 => return Err(ParsingError::Unrecognized(String::from(option))),
-                        1 => matches.remove(0),
+                        1 => self.resolve(matches.remove(0)),
                         _ => return Err(ParsingError::Ambiguous(String::from(option), matches)),
                     };
 
@@ -221,7 +260,7 @@ impl Parser {
                 }
             } else if arg.starts_with('-') && arg.chars().count() > 1 {
                 for (i, chr) in arg.chars().skip(1).enumerate() {
-                    let option = chr.to_string();
+                    let option = self.resolve(chr.to_string());
 
                     if self.flags.contains(&option) {
                         results.flags_mut().insert(option);

@@ -3,7 +3,6 @@
 /// Indicates the type of error that occurred and contains some extra data about the error.
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ParsingError {
-
     /// Indicates an unknown option was passed to the parser.
     /// The associated string is set to the affected option's name.
     Unrecognized(String),
@@ -28,7 +27,6 @@ pub enum ParsingError {
 }
 
 impl ParsingError {
-
     /// Returns a default error message for the specified `ParsingError`.
     pub fn default_message(&self) -> String {
         match *self {

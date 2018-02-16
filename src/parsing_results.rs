@@ -15,7 +15,6 @@ pub struct ParsingResults {
 }
 
 impl ParsingResults {
-
     /// Constructs and returns a new `ParsingResults` object.
     pub fn new() -> ParsingResults {
         ParsingResults {
