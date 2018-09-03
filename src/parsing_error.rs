@@ -1,40 +1,126 @@
-/// Returned when an error occurs during parsing.
-///
-/// Indicates the type of error that occurred and contains some extra data about the error.
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+use std::error::Error;
+use std::fmt::Display;
+use std::fmt::Debug;
+use std::fmt::Formatter;
+use std::fmt::Error as FmtError;
+
+
+/// Returned when an error occurs during the parsing of an argument list.
+#[derive(PartialEq, Eq)]
 pub enum ParsingError {
-    /// Indicates an unknown option was passed to the parser.
-    /// The associated string is set to the affected option's name.
-    Unrecognized(String),
+    /// Indicates that an option was specified which the program does not recognize.
+    ///
+    /// The associated string is the name of the aforementioned option.
+    UnrecognizedOption(String),
 
-    /// Indicates an argument could be multiple valid options.
-    /// The associated string is set to the affected argument.
-    /// The associated vector of strings is set to the valid options that the argument could have been.
-    Ambiguous(String, Vec<String>),
+    /// Indicates that a specified option could mean multiple valid options.
+    ///
+    /// The associated string is the name of the aformentioned option.
+    /// The associated vector of strings contains all the possible valid options.
+    AmbiguousOption(String, Vec<String>),
 
-    /// Indicates a named parameter is missing an argument.
-    /// The associated string is set to the affected parameter's name.
+    /// Indicates that a value was assigned to an option which does not take a value.
+    ///
+    /// The associated string is the name of the aforementioned option.
+    AssignmentToFlag(String),
+
+    /// Indicates that a value was assigned to an option which does not take a value.
+    ///
+    /// The first associated string is the name of the aforementioned option.
+    /// The second associated string is the name of the alias which was used to specify the option.
+    AssignmentToFlagAlias(String, String),
+
+    /// Indicates that a value was assigned to the same option more than once.
+    ///
+    /// The associated string is the name of the aforementioned option.
+    ParameterDuplication(String),
+
+    /// Indicates that a value was assigned to the same option more than once.
+    ///
+    /// The first associated string is the name of the aforementioned option.
+    /// The second associated string is the name of the alias which was used to specify the option.
+    ParameterDuplicationAlias(String, String),
+
+    /// Indicates that an option was specified which takes a value but didn't get one.
+    ///
+    /// The associated string is the name of the aforementioned option.
     MissingArgument(String),
 
-    /// Indicates a named parameter's argument could not be parsed into the parameter's associated type.
-    /// The first associated string is set to the affected parameter's name.
-    /// The second associated string is set to the affected parameter's argument.
-    ArgumentParsingError(String, String),
+    /// Indicates that an option was specified which takes a value but didn't get one.
+    ///
+    /// The first associated string is the name of the aforementioned option.
+    /// The second associated string is the name of the alias which was used to specify the option.
+    MissingArgumentAlias(String, String),
 
-    /// Indicates a named parameter was set multiple times.
-    /// The associated string is set to the affected parameter's name.
-    ParameterRepetition(String),
+    /// Indicates that a subcommand was specified which the program does not recognize.
+    ///
+    /// The associated string is the name of the aforementioned subcommand.
+    UnrecognizedSubcommand(String),
+
+    /// Indicates that a specified subcommand could mean multiple valid subcommands.
+    ///
+    /// The associated string is the name of the aformentioned subcommand.
+    /// The associated vector of strings contains all the possible valid subcommands.
+    AmbiguousSubcommand(String, Vec<String>),
+
+    /// Indicates that a required subcommand is missing from the argument list.
+    MissingRequiredSubcommand,
+
+    /// Indicates that one or more required options are missing from the argument list.
+    ///
+    /// The associated vector of strings contains all the missing required options.
+    MissingRequiredParameters(Vec<String>),
 }
 
-impl ParsingError {
-    /// Returns a default error message for the specified `ParsingError`.
-    pub fn default_message(&self) -> String {
-        match *self {
-            ParsingError::Unrecognized(ref option) => format!("error: unrecognized option \'{}\'", option),
-            ParsingError::Ambiguous(ref arg, ref options) => format!("error: argument \'{}\' is ambiguous for:\n{:?}", arg, options),
-            ParsingError::MissingArgument(ref param) => format!("error: option \'{}\' is missing an argument", param),
-            ParsingError::ArgumentParsingError(ref param, ref arg) => format!("error: argument \'{}\' is not a valid value for option \'{}\'", arg, param),
-            ParsingError::ParameterRepetition(ref param) => format!("error: option \'{}\' can be specified only once", param),
+impl Display for ParsingError {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
+        match self {
+            ParsingError::UnrecognizedOption(name) => write!(f, "unrecognized option '{}'", name),
+            ParsingError::AmbiguousOption(name, matches) => {
+                write!(f, "option '{}' is ambiguous; possibilities:", name)?;
+                for value in matches {
+                    write!(f, " '{}'", value)?;
+                }
+                Ok(())
+            },
+            ParsingError::AssignmentToFlag(name) => write!(f, "option '{}' doesn't allow an argument", name),
+            ParsingError::AssignmentToFlagAlias(name, alias) => write!(f, "option '{}' doesn't allow an argument; note that '{}' is an alias to '{0}'", name, alias),
+            ParsingError::ParameterDuplication(name) => write!(f, "parameter '{}' was set more than once", name),
+            ParsingError::ParameterDuplicationAlias(name, alias) => write!(f, "parameter '{}' was set more than once; note that '{}' is an alias to '{0}'", name, alias),
+            ParsingError::MissingArgument(name) => write!(f, "parameter '{}' is missing an argument", name),
+            ParsingError::MissingArgumentAlias(name, alias) => write!(f, "parameter '{}' is missing an argument; note that '{}' is an alias to '{0}'", name, alias),
+            ParsingError::UnrecognizedSubcommand(name) => write!(f, "unrecognized subcommand '{}'", name),
+            ParsingError::AmbiguousSubcommand(name, matches) => {
+                write!(f, "subcommand '{}' is ambiguous; possibilities:", name)?;
+                for value in matches {
+                    write!(f, " '{}'", value)?;
+                }
+                Ok(())
+            },
+            ParsingError::MissingRequiredSubcommand => write!(f, "argument list is missing a required subcommand"),
+            ParsingError::MissingRequiredParameters(names) => match names.len() {
+                0 => write!(f, "argument list is missing a required parameter"),
+                1 => write!(f, "argument list is missing required parameter '{}'", names[0]),
+                _ => {
+                    write!(f, "argument list is missing required parameters:")?;
+                    for value in names {
+                        write!(f, " '{}'", value)?;
+                    }
+                    Ok(())
+                },
+            },
         }
+    }
+}
+
+impl Debug for ParsingError {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
+        (self as &Display).fmt(f)
+    }
+}
+
+impl Error for ParsingError {
+    fn cause(&self) -> Option<&Error> {
+        None
     }
 }
